@@ -39,10 +39,11 @@ class NotFoundError(APIError):
 class ValidationError(PayloadMCPError):
     """Raised when data validation fails."""
     
-    def __init__(self, message: str, field: str = None, value: any = None):
+    def __init__(self, message: str, field: str = None, value: any = None, response_data: dict = None):
         super().__init__(message)
         self.field = field
         self.value = value
+        self.response_data = response_data or {}
 
 
 class RateLimitError(APIError):
