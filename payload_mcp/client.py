@@ -103,7 +103,7 @@ class PayloadClient:
                             message = error_data.get("message", "Bad request")
                         except json.JSONDecodeError:
                             message = "Bad request"
-                        raise ValidationError(f"Validation error: {message}", response_data=error_data)
+                        raise ValidationError(f"Validation error: {message}, {error_data}")
                     elif response.status_code == 401:
                         # Unauthorized - authentication failed
                         raise AuthenticationError("JWT authentication failed - please check your token")
@@ -127,7 +127,7 @@ class PayloadClient:
                             message = error_data.get("message", "Unprocessable entity")
                         except json.JSONDecodeError:
                             message = "Unprocessable entity"
-                        raise ValidationError(f"Validation error: {message}", response_data=error_data)
+                        raise ValidationError(f"Validation error: {message}, {error_data}")
                     elif response.status_code == 429:
                         # Too Many Requests - rate limiting
                         raise RateLimitError("Rate limit exceeded", response.status_code)
@@ -222,7 +222,7 @@ class PayloadClient:
             logger.error(f"API error creating object in collection {collection_name}: {str(e)}")
             # Check if it's a validation error from the API
             if e.status_code == 400:
-                raise ValidationError(f"Validation error: {e.message}", response_data=e.response_data)
+                raise ValidationError(f"Validation error: {e.message}, {e.response_data}")
             raise
         except ConnectionError:
             # Re-raise connection errors as-is
@@ -344,7 +344,7 @@ class PayloadClient:
             logger.error(f"API error searching objects in collection {collection_name}: {str(e)}")
             # Check if it's a validation error from the API
             if e.status_code == 400:
-                raise ValidationError(f"Invalid query parameters: {e.message}", response_data=e.response_data)
+                raise ValidationError(f"Invalid query parameters: {e.message}, {e.response_data}")
             raise
         except ConnectionError:
             # Re-raise connection errors as-is
@@ -453,7 +453,7 @@ class PayloadClient:
             logger.error(f"API error updating object {object_id} in collection {collection_name}: {str(e)}")
             # Check if it's a validation error from the API
             if e.status_code == 400:
-                raise ValidationError(f"Validation error: {e.message}", response_data=e.response_data)
+                raise ValidationError(f"Validation error: {e.message}, {e.response_data}")
             raise
         except ConnectionError:
             # Re-raise connection errors as-is
