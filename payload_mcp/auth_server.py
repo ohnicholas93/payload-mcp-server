@@ -68,7 +68,7 @@ class AuthHandler(BaseHTTPRequestHandler):
             margin-bottom: 5px;
             font-weight: bold;
         }
-        input[type="email"], input[type="password"] {
+        input[type="email"], input[type="password"], input[type="text"] {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -166,13 +166,13 @@ class AuthHandler(BaseHTTPRequestHandler):
                 const result = await response.json();
                 
                 if (result.success) {
-                    successDiv.textContent = 'Authentication successful! This window will close automatically.';
+                    successDiv.textContent = 'Authentication successful! Please close this window if it does not close automatically.';
                     successDiv.style.display = 'block';
                     
                     // Close the window after a short delay
                     setTimeout(() => {
                         window.close();
-                    }, 1500);
+                    }, 2000);
                 } else {
                     errorDiv.textContent = result.message || 'Authentication failed';
                     errorDiv.style.display = 'block';
