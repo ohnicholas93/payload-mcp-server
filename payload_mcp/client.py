@@ -113,47 +113,29 @@ class PayloadClient:
                     elif response.status_code == 401:
                         # Unauthorized - authentication failed
                         if retry_auth and self.auth_manager:
-                            # Try to refresh the token and retry the request
-                            logger.info("Authentication failed, attempting token refresh")
-                            if await self.auth_manager.refresh_token():
-                                # Update headers with new token
-                                self.headers["Authorization"] = f"JWT {self.auth_manager.auth_token}"
-                                logger.info("Token refreshed, retrying request")
-                                # Retry the request without allowing another auth retry
+                            # Try browser authentication
+                            if await self._try_browser_auth():
+                                # Retry the request after successful browser auth
                                 return await self._make_request(method, endpoint, params, data, retry_auth=False)
                             else:
-                                # Token refresh failed, try browser authentication
-                                if await self._try_browser_auth():
-                                    # Retry the request after successful browser auth
-                                    return await self._make_request(method, endpoint, params, data, retry_auth=False)
-                                else:
-                                    raise AuthenticationError("JWT authentication failed - unable to authenticate")
+                                raise AuthenticationError("JWT authentication failed - unable to authenticate")
                         else:
                             raise AuthenticationError("JWT authentication failed - please check your token")
                     elif response.status_code == 403:
                         # Forbidden - insufficient permissions
                         if retry_auth and self.auth_manager:
-                            # Try to refresh the token and retry the request
-                            logger.info("Access forbidden, attempting token refresh")
-                            if await self.auth_manager.refresh_token():
-                                # Update headers with new token
-                                self.headers["Authorization"] = f"JWT {self.auth_manager.auth_token}"
-                                logger.info("Token refreshed, retrying request")
-                                # Retry the request without allowing another auth retry
+                            # Try browser authentication
+                            if await self._try_browser_auth():
+                                # Retry the request after successful browser auth
                                 return await self._make_request(method, endpoint, params, data, retry_auth=False)
                             else:
-                                # Token refresh failed, try browser authentication
-                                if await self._try_browser_auth():
-                                    # Retry the request after successful browser auth
-                                    return await self._make_request(method, endpoint, params, data, retry_auth=False)
-                                else:
-                                    error_data = {}
-                                    try:
-                                        error_data = response.json()
-                                        message = error_data.get("message", "Access forbidden")
-                                    except json.JSONDecodeError:
-                                        message = "Access forbidden"
-                                    raise APIError(f"Access forbidden: {message}", response.status_code, error_data)
+                                error_data = {}
+                                try:
+                                    error_data = response.json()
+                                    message = error_data.get("message", "Access forbidden")
+                                except json.JSONDecodeError:
+                                    message = "Access forbidden"
+                                raise APIError(f"Access forbidden: {message}", response.status_code, error_data)
                         else:
                             error_data = {}
                             try:
@@ -227,6 +209,7 @@ class PayloadClient:
         
         try:
             # Start browser authentication using auth manager
+            logger.info("Starting browser authentication...")
             if not await self.auth_manager.start_browser_auth():
                 logger.error("Failed to start browser authentication")
                 return False
@@ -234,6 +217,8 @@ class PayloadClient:
             # Wait for authentication to complete
             logger.info("Waiting for browser authentication...")
             success = await self.auth_manager.wait_for_browser_auth(timeout=300)  # 5 minutes
+            
+            logger.info(f"Browser authentication result: {success}")
             
             if success:
                 # Update client with new token from auth manager
