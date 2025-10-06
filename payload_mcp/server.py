@@ -60,14 +60,14 @@ async def initialize_client(config: ServerConfig) -> PayloadClient:
         client.set_auth_manager(auth_manager)
         
         # Test connection to Payload CMS API
-        try:
-            logger.info("Testing connection to Payload CMS API...")
-            result = await client._make_request("GET", "users")
-            logger.info(f"Connection test successful: Retrieved {len(result.get('docs', []))} users")
-            logger.debug(f"API Response: {result}")
-        except Exception as e:
-            logger.error(f"Connection test failed: {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
+        # try:
+        #     logger.info("Testing connection to Payload CMS API...")
+        #     result = await client._make_request("GET", "users")
+        #     logger.info(f"Connection test successful: Retrieved {len(result.get('docs', []))} users")
+        #     logger.debug(f"API Response: {result}")
+        # except Exception as e:
+        #     logger.error(f"Connection test failed: {str(e)}")
+        #     logger.error(f"Error type: {type(e).__name__}")
             # Don't raise the exception, just log it so the server can continue
             # but the user will know there's a connection issue
         
