@@ -63,7 +63,7 @@ async def handle_list_tools() -> List[types.Tool]:
     return [
         types.Tool(
             name="create_object",
-            description="Create a new object in a specified collection",
+            description="Create one or multiple new object(s) in a specified collection",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -72,8 +72,20 @@ async def handle_list_tools() -> List[types.Tool]:
                         "description": "Name of the collection to create object in"
                     },
                     "data": {
-                        "type": "object",
-                        "description": "Object data to create"
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "description": "Object data to create"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                },
+                                "description": "Array of objects to create"
+                            }
+                        ],
+                        "description": "Object data or array of objects to create"
                     }
                 },
                 "required": ["collection_name", "data"]
@@ -153,11 +165,24 @@ async def handle_call_tool(
             if not data:
                 raise ValueError("data is required")
             
-            result = await payload_client.create_object(collection_name, data)
-            return [types.TextContent(
-                type="text",
-                text=json.dumps(result, indent=2)
-            )]
+            # Check if data is an array of objects
+            if isinstance(data, list):
+                # Handle array of objects
+                results = []
+                for item in data:
+                    result = await payload_client.create_object(collection_name, item)
+                    results.append(result)
+                return [types.TextContent(
+                    type="text",
+                    text=json.dumps(results, indent=2)
+                )]
+            else:
+                # Handle single object
+                result = await payload_client.create_object(collection_name, data)
+                return [types.TextContent(
+                    type="text",
+                    text=json.dumps(result, indent=2)
+                )]
         
         elif name == "search_objects":
             collection_name = arguments.get("collection_name")
