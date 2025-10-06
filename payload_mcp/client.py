@@ -32,6 +32,7 @@ class PayloadClient:
         self.timeout = config.timeout
         self.verify_ssl = config.verify_ssl
         self.bypass_proxy = config.bypass_proxy
+        self.auth_manager = None  # Will be set by server
         
         # Prepare headers
         self.headers = {
@@ -43,12 +44,17 @@ class PayloadClient:
         if self.auth_token:
             self.headers["Authorization"] = f"JWT {self.auth_token}"
     
+    def set_auth_manager(self, auth_manager):
+        """Set the auth manager for token refresh."""
+        self.auth_manager = auth_manager
+    
     async def _make_request(
         self,
         method: str,
         endpoint: str,
         params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None
+        data: Optional[Dict[str, Any]] = None,
+        retry_auth: bool = True
     ) -> Dict[str, Any]:
         """Make HTTP request to Payload CMS API."""
         # For Payload CMS, we need to append the endpoint to the base URL
@@ -106,16 +112,56 @@ class PayloadClient:
                         raise ValidationError(f"Validation error: {message}, {error_data}")
                     elif response.status_code == 401:
                         # Unauthorized - authentication failed
-                        raise AuthenticationError("JWT authentication failed - please check your token")
+                        if retry_auth and self.auth_manager:
+                            # Try to refresh the token and retry the request
+                            logger.info("Authentication failed, attempting token refresh")
+                            if await self.auth_manager.refresh_token():
+                                # Update headers with new token
+                                self.headers["Authorization"] = f"JWT {self.auth_manager.auth_token}"
+                                logger.info("Token refreshed, retrying request")
+                                # Retry the request without allowing another auth retry
+                                return await self._make_request(method, endpoint, params, data, retry_auth=False)
+                            else:
+                                # Token refresh failed, try browser authentication
+                                if await self._try_browser_auth():
+                                    # Retry the request after successful browser auth
+                                    return await self._make_request(method, endpoint, params, data, retry_auth=False)
+                                else:
+                                    raise AuthenticationError("JWT authentication failed - unable to authenticate")
+                        else:
+                            raise AuthenticationError("JWT authentication failed - please check your token")
                     elif response.status_code == 403:
                         # Forbidden - insufficient permissions
-                        error_data = {}
-                        try:
-                            error_data = response.json()
-                            message = error_data.get("message", "Access forbidden")
-                        except json.JSONDecodeError:
-                            message = "Access forbidden"
-                        raise APIError(f"Access forbidden: {message}", response.status_code, error_data)
+                        if retry_auth and self.auth_manager:
+                            # Try to refresh the token and retry the request
+                            logger.info("Access forbidden, attempting token refresh")
+                            if await self.auth_manager.refresh_token():
+                                # Update headers with new token
+                                self.headers["Authorization"] = f"JWT {self.auth_manager.auth_token}"
+                                logger.info("Token refreshed, retrying request")
+                                # Retry the request without allowing another auth retry
+                                return await self._make_request(method, endpoint, params, data, retry_auth=False)
+                            else:
+                                # Token refresh failed, try browser authentication
+                                if await self._try_browser_auth():
+                                    # Retry the request after successful browser auth
+                                    return await self._make_request(method, endpoint, params, data, retry_auth=False)
+                                else:
+                                    error_data = {}
+                                    try:
+                                        error_data = response.json()
+                                        message = error_data.get("message", "Access forbidden")
+                                    except json.JSONDecodeError:
+                                        message = "Access forbidden"
+                                    raise APIError(f"Access forbidden: {message}", response.status_code, error_data)
+                        else:
+                            error_data = {}
+                            try:
+                                error_data = response.json()
+                                message = error_data.get("message", "Access forbidden")
+                            except json.JSONDecodeError:
+                                message = "Access forbidden"
+                            raise APIError(f"Access forbidden: {message}", response.status_code, error_data)
                     elif response.status_code == 404:
                         # Not Found
                         raise NotFoundError("Resource not found", response.status_code)
@@ -174,6 +220,38 @@ class PayloadClient:
         except httpx.HTTPError as e:
             raise ConnectionError(f"HTTP error: {str(e)}")
     
+    async def _try_browser_auth(self) -> bool:
+        """Try to authenticate using browser popup."""
+        if not self.auth_manager:
+            return False
+        
+        try:
+            # Start browser authentication using auth manager
+            if not await self.auth_manager.start_browser_auth():
+                logger.error("Failed to start browser authentication")
+                return False
+            
+            # Wait for authentication to complete
+            logger.info("Waiting for browser authentication...")
+            success = await self.auth_manager.wait_for_browser_auth(timeout=300)  # 5 minutes
+            
+            if success:
+                # Update client with new token from auth manager
+                if self.auth_manager.auth_token:
+                    self.auth_token = self.auth_manager.auth_token
+                    self.headers["Authorization"] = f"JWT {self.auth_token}"
+                    logger.info("Browser authentication completed successfully")
+                    return True
+                else:
+                    logger.error("Browser authentication completed but no token received")
+                    return False
+            else:
+                logger.warning("Browser authentication failed or timed out")
+                return False
+            
+        except Exception as e:
+            logger.error(f"Browser authentication failed: {e}")
+            return False
     
     async def create_object(
         self,

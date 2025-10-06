@@ -17,6 +17,7 @@ from mcp.server.stdio import stdio_server
 from .client import PayloadClient
 from .config import ServerConfig
 from .exceptions import PayloadMCPError, ConfigurationError
+from .auth_manager import AuthManager
 
 # Set up logging
 logging.basicConfig(
@@ -31,14 +32,32 @@ server = Server("payload-mcp-server")
 # Global client instance
 client: Optional[PayloadClient] = None
 
+# Global auth manager instance
+auth_manager: Optional[AuthManager] = None
+
 
 async def initialize_client(config: ServerConfig) -> PayloadClient:
     """Initialize the Payload CMS client with connection test."""
-    global client
+    global client, auth_manager
     
     if client is None:
         logger.info(f"Initializing Payload client for {config.payload.base_url}")
         client = PayloadClient(config.payload)
+        
+        # Initialize auth manager
+        auth_manager = AuthManager(config.payload)
+        
+        # Set up auth callback to update client headers when token changes
+        def update_client_headers(new_token: str):
+            if client:
+                client.auth_token = new_token
+                client.headers["Authorization"] = f"JWT {new_token}"
+                logger.info("Client headers updated with new token")
+        
+        auth_manager.add_auth_callback(update_client_headers)
+        
+        # Set auth manager in client for token refresh
+        client.set_auth_manager(auth_manager)
         
         # Test connection to Payload CMS API
         try:
