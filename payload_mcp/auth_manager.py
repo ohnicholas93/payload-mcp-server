@@ -29,6 +29,8 @@ class AuthManager:
         self.auth_callbacks: list[Callable[[str], None]] = []
         self.browser_auth_in_progress = False
         self.browser_auth_event = asyncio.Event()
+        # Event loop where wait_for_browser_auth is awaiting; used for thread-safe signaling
+        self._event_loop: Optional[asyncio.AbstractEventLoop] = None
         
     def add_auth_callback(self, callback: Callable[[str], None]):
         """Add a callback to be called when authentication is renewed."""
@@ -41,11 +43,37 @@ class AuthManager:
                 callback(new_token)
             except Exception as e:
                 logger.error(f"Error in auth callback: {e}")
-        
-        # Set event if browser auth is in progress
-        if self.browser_auth_in_progress:
-            self.browser_auth_event.set()
+
+        # Signal any waiter that browser auth completed successfully
+        self._signal_browser_auth_completed()
+
+    def _signal_browser_auth_completed(self):
+        """
+        Signal the browser authentication event in a thread-safe manner.
+        This ensures that if the login occurs in a different thread/loop
+        (e.g., inside AuthServer via asyncio.run), the waiting task in the
+        original loop is correctly awakened.
+        """
+        def _set_event():
+            if not self.browser_auth_event.is_set():
+                self.browser_auth_event.set()
             self.browser_auth_in_progress = False
+
+        try:
+            # If we captured a loop where wait_for_browser_auth is awaiting, use it
+            if self._event_loop and self._event_loop.is_running():
+                # Ensure thread-safe call into the correct loop
+                self._event_loop.call_soon_threadsafe(_set_event)
+            else:
+                # Fallback: set directly (safe when called from same loop)
+                _set_event()
+        except Exception as e:
+            logger.error(f"Failed to signal browser auth completion: {e}")
+            # Best effort fallback
+            try:
+                _set_event()
+            except Exception:
+                pass
     
     def set_credentials(self, email: str, password: str):
         """Store user credentials for automatic renewal."""
@@ -245,12 +273,8 @@ class AuthManager:
             # Set up callback to handle successful authentication
             def auth_callback(result, *args):
                 logger.info("Browser authentication successful")
-                # The login method will have already updated the token
-                # and called _notify_auth_renewed which sets the event
-                # But we need to make sure the event is set here as well
-                if self.browser_auth_in_progress:
-                    self.browser_auth_event.set()
-                    self.browser_auth_in_progress = False
+                # Ensure the waiting loop is signaled in a thread-safe way
+                self._signal_browser_auth_completed()
             
             auth_server.set_auth_manager(self, auth_callback)
             
@@ -284,6 +308,19 @@ class AuthManager:
         Returns:
             True if authentication was successful, False if timed out
         """
+        # Record the current event loop to enable thread-safe signaling from other threads
+        try:
+            self._event_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop; leave as None
+            self._event_loop = None
+
+        # If the event is already set (e.g., user previously failed then retried successfully),
+        # return True immediately to avoid missing the signal due to race conditions.
+        if self.browser_auth_event.is_set():
+            return True
+
+        # If there is no active browser auth flow and no event set, nothing to wait for.
         if not self.browser_auth_in_progress:
             return False
         
