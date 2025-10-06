@@ -209,7 +209,6 @@ class PayloadClient:
         
         try:
             # Start browser authentication using auth manager
-            logger.info("Starting browser authentication...")
             if not await self.auth_manager.start_browser_auth():
                 logger.error("Failed to start browser authentication")
                 return False
@@ -217,8 +216,6 @@ class PayloadClient:
             # Wait for authentication to complete
             logger.info("Waiting for browser authentication...")
             success = await self.auth_manager.wait_for_browser_auth(timeout=300)  # 5 minutes
-            
-            logger.info(f"Browser authentication result: {success}")
             
             if success:
                 # Update client with new token from auth manager

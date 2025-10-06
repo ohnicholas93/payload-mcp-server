@@ -215,16 +215,11 @@ class AuthHandler(BaseHTTPRequestHandler):
                     self.auth_manager.collection_slug = collection
                 
                 # Perform login
-                # Use asyncio.run to execute the async login method
-                logger.info(f"Attempting login for {email}")
                 result = asyncio.run(self.auth_manager.login(email, password))
-                logger.info("Login completed successfully")
                 
                 # Call the callback if provided
                 if self.auth_callback:
-                    logger.info("Calling authentication callback")
-                    self.auth_callback(result, self.auth_manager)
-                    logger.info("Authentication callback completed")
+                    self.auth_callback(result)
                 
                 self._send_json_response({
                     'success': True,
