@@ -108,7 +108,7 @@ async def handle_list_tools() -> List[types.Tool]:
                     },
                     "locale": {
                         "type": "string",
-                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided, and localization is enabled, **only the default locale will be applied**"
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, **only the ONE default locale will be used**"
                     }
                 },
                 "required": ["collection_name", "data"]
@@ -142,7 +142,7 @@ async def handle_list_tools() -> List[types.Tool]:
                     },
                     "locale": {
                         "type": "string",
-                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided, and localization is enabled, **only the default locale will be applied**"
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, **only the ONE default locale will be used**"
                     }
                 },
                 "required": ["collection_name"]
@@ -168,7 +168,7 @@ async def handle_list_tools() -> List[types.Tool]:
                     },
                     "locale": {
                         "type": "string",
-                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided, and localization is enabled, **only the default locale will be applied**"
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, **only the ONE default locale will be used**"
                     }
                 },
                 "required": ["collection_name", "object_id", "data"]

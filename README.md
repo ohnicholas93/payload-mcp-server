@@ -4,7 +4,11 @@ A Model Context Protocol (MCP) server for interacting with Payload CMS through i
 
 ## Features
 
-This MCP server provides the following tools for interacting with Payload CMS:
+This MCP server provides the following tools for interacting with Payload CMS, with full support for localization:
+
+1. **create_object** - Creates a Payload object for a specific collection
+2. **search_objects** - Searches objects based on query and collection
+3. **update_object** - Updates an object by ID
 
 1. **create_object** - Creates a Payload object for a specific collection
 2. **search_objects** - Searches objects based on query and collection
@@ -145,6 +149,7 @@ Creates a new object in a specified collection.
 **Parameters:**
 - `collection_name` (string, required): Name of the collection to create object in
 - `data` (object, required): Object data to create
+- `locale` (string, optional): Locale code for the operation (e.g., 'en', 'es'). If not provided, Payload CMS uses its default fallback behavior.
 
 **Example:**
 ```python
@@ -153,7 +158,8 @@ result = await session.call_tool("create_object", {
   "data": {
     "title": "My New Post",
     "content": "This is the content of my post"
-  }
+  },
+  "locale": "en"
 })
 ```
 
@@ -166,6 +172,7 @@ Searches objects in a collection.
 - `limit` (integer, optional): Maximum number of results to return
 - `page` (integer, optional): Page number for pagination
 - `sort` (string, optional): Sort field and direction
+- `locale` (string, optional): Locale code for the operation (e.g., 'en', 'es'). If not provided, Payload CMS uses its default fallback behavior.
 
 **Example:**
 ```python
@@ -179,7 +186,8 @@ result = await session.call_tool("search_objects", {
     }
   },
   "limit": 10,
-  "sort": "-createdAt"
+  "sort": "-createdAt",
+  "locale": "es"
 })
 ```
 
@@ -190,6 +198,7 @@ Updates an object by ID.
 - `collection_name` (string, required): Name of the collection containing the object
 - `object_id` (string, required): ID of the object to update
 - `data` (object, required): Updated object data
+- `locale` (string, optional): Locale code for the operation (e.g., 'en', 'es'). If not provided, Payload CMS uses its default fallback behavior.
 
 **Example:**
 ```python
@@ -198,7 +207,8 @@ result = await session.call_tool("update_object", {
   "object_id": "1234567890",
   "data": {
     "title": "Updated Post Title"
-  }
+  },
+  "locale": "de"
 })
 ```
 
