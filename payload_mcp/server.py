@@ -105,6 +105,10 @@ async def handle_list_tools() -> List[types.Tool]:
                             }
                         ],
                         "description": "Object data or array of objects to create"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided, and localization is enabled, **only the default locale will be applied**"
                     }
                 },
                 "required": ["collection_name", "data"]
@@ -135,6 +139,10 @@ async def handle_list_tools() -> List[types.Tool]:
                     "sort": {
                         "type": "string",
                         "description": "Sort field and direction"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided, and localization is enabled, **only the default locale will be applied**"
                     }
                 },
                 "required": ["collection_name"]
@@ -157,6 +165,10 @@ async def handle_list_tools() -> List[types.Tool]:
                     "data": {
                         "type": "object",
                         "description": "Updated object data"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided, and localization is enabled, **only the default locale will be applied**"
                     }
                 },
                 "required": ["collection_name", "object_id", "data"]
@@ -178,6 +190,7 @@ async def handle_call_tool(
         if name == "create_object":
             collection_name = arguments.get("collection_name")
             data = arguments.get("data")
+            locale = arguments.get("locale")
             
             if not collection_name:
                 raise ValueError("collection_name is required")
@@ -189,7 +202,7 @@ async def handle_call_tool(
                 # Handle array of objects
                 results = []
                 for item in data:
-                    result = await payload_client.create_object(collection_name, item)
+                    result = await payload_client.create_object(collection_name, item, locale)
                     results.append(result)
                 return [types.TextContent(
                     type="text",
@@ -197,7 +210,7 @@ async def handle_call_tool(
                 )]
             else:
                 # Handle single object
-                result = await payload_client.create_object(collection_name, data)
+                result = await payload_client.create_object(collection_name, data, locale)
                 return [types.TextContent(
                     type="text",
                     text=json.dumps(result, indent=2)
@@ -212,13 +225,15 @@ async def handle_call_tool(
             limit = arguments.get("limit")
             page = arguments.get("page")
             sort = arguments.get("sort")
+            locale = arguments.get("locale")
             
             result = await payload_client.search_objects(
                 collection_name=collection_name,
                 where=query,
                 limit=limit,
                 page=page,
-                sort=sort
+                sort=sort,
+                locale=locale
             )
             return [types.TextContent(
                 type="text",
@@ -229,6 +244,7 @@ async def handle_call_tool(
             collection_name = arguments.get("collection_name")
             object_id = arguments.get("object_id")
             data = arguments.get("data")
+            locale = arguments.get("locale")
             
             if not collection_name:
                 raise ValueError("collection_name is required")
@@ -237,7 +253,7 @@ async def handle_call_tool(
             if not data:
                 raise ValueError("data is required")
             
-            result = await payload_client.update_object(collection_name, object_id, data)
+            result = await payload_client.update_object(collection_name, object_id, data, locale)
             return [types.TextContent(
                 type="text",
                 text=json.dumps(result, indent=2)

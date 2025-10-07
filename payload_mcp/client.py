@@ -238,7 +238,8 @@ class PayloadClient:
     async def create_object(
         self,
         collection_name: str,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
+        locale: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Create a new object in the specified collection.
@@ -246,6 +247,7 @@ class PayloadClient:
         Args:
             collection_name: Name of the collection
             data: Object data to create
+            locale: Locale code for the operation (e.g., 'en', 'es')
             
         Returns:
             Created object data
@@ -263,10 +265,16 @@ class PayloadClient:
             raise ValidationError("Data is required for creating an object")
             
         try:
+            # Build query parameters for localization
+            params = {}
+            if locale is not None:
+                params["locale"] = locale
+                
             response = await self._make_request(
                 "POST",
                 collection_name,
-                data=data
+                data=data,
+                params=params if params else None
             )
             
             logger.debug(f"Successfully created object in collection {collection_name}")
@@ -461,7 +469,8 @@ class PayloadClient:
         self,
         collection_name: str,
         object_id: Union[str, int],
-        data: Dict[str, Any]
+        data: Dict[str, Any],
+        locale: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Update an object by ID.
@@ -470,6 +479,7 @@ class PayloadClient:
             collection_name: Name of the collection
             object_id: ID of the object to update
             data: Updated object data
+            locale: Locale code for the operation (e.g., 'en', 'es')
             
         Returns:
             Updated object data
@@ -491,10 +501,16 @@ class PayloadClient:
             raise ValidationError("Data is required for updating an object")
             
         try:
+            # Build query parameters for localization
+            params = {}
+            if locale is not None:
+                params["locale"] = locale
+                
             response = await self._make_request(
                 "PATCH",
                 f"{collection_name}/{object_id}",
-                data=data
+                data=data,
+                params=params if params else None
             )
             
             logger.debug(f"Successfully updated object {object_id} in collection {collection_name}")
