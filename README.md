@@ -16,6 +16,110 @@ The server handles authentication automatically, including JWT token management 
 - **Error Handling**: Comprehensive exceptions for validation, auth, API, and connection issues.
 - **Configurable**: Override Payload host, timeouts, SSL, and logging via environment variables.
 
+## Tool Schemas
+
+The available tools and their input schemas (JSON Schema format) are listed below. These define the parameters for each tool call.
+
+### create_object
+**Description**: Create one or multiple new object(s) in a specified collection.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "collection_name": {
+      "type": "string",
+      "description": "Name of the collection to create object in"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "description": "Object data to create"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Array of objects to create"
+        }
+      ],
+      "description": "Object data or array of objects to create"
+    },
+    "locale": {
+      "type": "string",
+      "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, only the ONE default locale will be used"
+    }
+  },
+  "required": ["collection_name", "data"]
+}
+```
+
+### search_objects
+**Description**: Search objects in a collection.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "collection_name": {
+      "type": "string",
+      "description": "Name of the collection to search in"
+    },
+    "query": {
+      "type": "object",
+      "description": "Search query parameters (MongoDB-like where clause)"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum number of results to return"
+    },
+    "page": {
+      "type": "integer",
+      "description": "Page number for pagination"
+    },
+    "sort": {
+      "type": "string",
+      "description": "Sort field and direction"
+    },
+    "locale": {
+      "type": "string",
+      "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, only the ONE default locale will be used"
+    }
+  },
+  "required": ["collection_name"]
+}
+```
+
+### update_object
+**Description**: Update an object by ID.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "collection_name": {
+      "type": "string",
+      "description": "Name of the collection containing the object"
+    },
+    "object_id": {
+      "type": "string",
+      "description": "ID of the object to update"
+    },
+    "data": {
+      "type": "object",
+      "description": "Updated object data"
+    },
+    "locale": {
+      "type": "string",
+      "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, only the ONE default locale will be used"
+    }
+  },
+  "required": ["collection_name", "object_id", "data"]
+}
+```
+
 ## Prerequisites
 
 Before setting up and using this MCP server, ensure the following:
@@ -156,7 +260,7 @@ Once integrated, you can use the tools in your AI assistant prompts. Examples:
   Update the user with ID "123" in the 'users' collection to set email to "john@newemail.com".
   ```
 
-The tools support advanced parameters like locales, population, and complex queries—refer to the tool schemas in the server code for full details.
+The tools support advanced parameters like locales, population, and complex queries—refer to the tool schemas above for full details.
 
 ## Troubleshooting
 
@@ -164,6 +268,7 @@ The tools support advanced parameters like locales, population, and complex quer
 - **Authentication Issues**: Provide a valid JWT token in `.env` or allow browser login. Verify your Payload user has necessary permissions.
 - **Tool Not Found**: Restart the MCP client after adding the server config.
 - **Logs**: Set `PAYLOAD_MCP_LOG_LEVEL=DEBUG` for verbose output.
+- **Windows/PowerShell**: Commands use standard syntax; use `python.exe` if `python` is ambiguous.
 
 ## Contributing
 
