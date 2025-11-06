@@ -11,6 +11,7 @@ The server handles authentication automatically, including JWT token management 
 - **Create Objects**: Add new documents to any collection, supporting single objects or batches.
 - **Search Objects**: Query collections with filters (MongoDB-like `where` clauses), pagination, sorting, localization, and population of related fields.
 - **Update Objects**: Modify existing documents by ID, with support for partial updates.
+- **Globals Support**: Read and update Global documents by their slug, with full localization and population support.
 - **Authentication Handling**: Automatic JWT token refresh, stored credentials, and interactive browser login for seamless auth.
 - **Localization Support**: Works with Payload's i18n features; specify locales in tool calls.
 - **Error Handling**: Comprehensive exceptions for validation, auth, API, and connection issues.
@@ -117,6 +118,74 @@ The available tools and their input schemas (JSON Schema format) are listed belo
     }
   },
   "required": ["collection_name", "object_id", "data"]
+}
+```
+
+### get_global
+**Description**: Get a global document by its slug.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "The slug of the global to retrieve"
+    },
+    "locale": {
+      "type": "string",
+      "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, only the ONE default locale will be used"
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Controls the depth of population for relationships"
+    },
+    "fallback_locale": {
+      "type": "string",
+      "description": "Specifies a fallback locale if the requested locale is not available"
+    },
+    "select": {
+      "type": "object",
+      "description": "Fields to include in the result"
+    },
+    "populate": {
+      "type": "object",
+      "description": "Fields to populate from related documents"
+    }
+  },
+  "required": ["slug"]
+}
+```
+
+### update_global
+**Description**: Update a global document by its slug.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "The slug of the global to update"
+    },
+    "data": {
+      "type": "object",
+      "description": "Updated global data"
+    },
+    "locale": {
+      "type": "string",
+      "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, only the ONE default locale will be used"
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Controls the depth of population for relationships in response"
+    },
+    "fallback_locale": {
+      "type": "string",
+      "description": "Specifies a fallback locale if the requested locale is not available"
+    }
+  },
+  "required": ["slug", "data"]
 }
 ```
 
@@ -234,7 +303,7 @@ The server does **not** require Payload to be running during startup—only when
    ```
 
    - Save the settings and restart/reload your MCP client.
-   - The client will automatically start the server when needed and list the available tools (e.g., `create_object`, `search_objects`, `update_object`).
+   - The client will automatically start the server when needed and list the available tools (e.g., `create_object`, `search_objects`, `update_object`, `get_global`, `update_global`).
 
 2. **Verify Integration**:
    - In your MCP client, query for available tools. You should see the Payload CMS tools listed.

@@ -538,3 +538,163 @@ class PayloadClient:
             logger.error(f"Unexpected error updating object {object_id} in collection {collection_name}: {str(e)}")
             raise APIError(f"Unexpected error: {str(e)}")
     
+    async def get_global(
+        self,
+        slug: str,
+        locale: Optional[str] = None,
+        depth: Optional[int] = None,
+        fallback_locale: Optional[str] = None,
+        select: Optional[Dict[str, Any]] = None,
+        populate: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Get a global document by its slug.
+        
+        Args:
+            slug: The slug of the global to retrieve
+            locale: Locale code for the operation (e.g., 'en', 'es')
+            depth: Controls the depth of population for relationships
+            fallback_locale: Specifies a fallback locale
+            select: Fields to include in the result
+            populate: Fields to populate from related documents
+            
+        Returns:
+            Global document data
+            
+        Raises:
+            ValidationError: If the slug is invalid
+            AuthenticationError: If authentication fails
+            NotFoundError: If the global is not found
+            APIError: If the API request fails
+            ConnectionError: If connection to Payload CMS fails
+        """
+        if not slug:
+            raise ValidationError("Global slug is required")
+            
+        try:
+            # Build query parameters
+            params = {}
+            
+            if depth is not None:
+                params["depth"] = depth
+            if locale is not None:
+                params["locale"] = locale
+            if fallback_locale is not None:
+                params["fallback-locale"] = fallback_locale
+                
+            # Handle select parameter with proper formatting
+            if select:
+                self._build_nested_params(select, "select", params)
+            
+            # Handle populate parameter with proper formatting
+            if populate:
+                self._build_nested_params(populate, "populate", params)
+            
+            response = await self._make_request(
+                "GET",
+                f"globals/{slug}",
+                params=params if params else None
+            )
+            
+            logger.debug(f"Successfully retrieved global {slug}")
+            return response
+            
+        except ValidationError:
+            # Re-raise validation errors as-is
+            raise
+        except AuthenticationError:
+            # Re-raise authentication errors as-is
+            raise
+        except NotFoundError:
+            # Re-raise not found errors as-is
+            raise
+        except APIError as e:
+            logger.error(f"API error retrieving global {slug}: {str(e)}")
+            # Check if it's a validation error from the API
+            if e.status_code == 400:
+                raise ValidationError(f"Invalid parameters: {e.message}, {e.response_data}")
+            raise
+        except ConnectionError:
+            # Re-raise connection errors as-is
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error retrieving global {slug}: {str(e)}")
+            raise APIError(f"Unexpected error: {str(e)}")
+    
+    async def update_global(
+        self,
+        slug: str,
+        data: Dict[str, Any],
+        locale: Optional[str] = None,
+        depth: Optional[int] = None,
+        fallback_locale: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Update a global document by its slug.
+        
+        Args:
+            slug: The slug of the global to update
+            data: Updated global data
+            locale: Locale code for the operation (e.g., 'en', 'es')
+            depth: Controls the depth of population for relationships in response
+            fallback_locale: Specifies a fallback locale
+            
+        Returns:
+            Updated global document data
+            
+        Raises:
+            ValidationError: If the slug or data is invalid
+            AuthenticationError: If authentication fails
+            NotFoundError: If the global is not found
+            APIError: If the API request fails
+            ConnectionError: If connection to Payload CMS fails
+        """
+        if not slug:
+            raise ValidationError("Global slug is required")
+            
+        if not data:
+            raise ValidationError("Data is required for updating a global")
+            
+        try:
+            # Build query parameters
+            params = {}
+            
+            if depth is not None:
+                params["depth"] = depth
+            if locale is not None:
+                params["locale"] = locale
+            if fallback_locale is not None:
+                params["fallback-locale"] = fallback_locale
+                
+            response = await self._make_request(
+                "POST",
+                f"globals/{slug}",
+                data=data,
+                params=params if params else None
+            )
+            
+            logger.debug(f"Successfully updated global {slug}")
+            return response
+            
+        except ValidationError:
+            # Re-raise validation errors as-is
+            raise
+        except AuthenticationError:
+            # Re-raise authentication errors as-is
+            raise
+        except NotFoundError:
+            # Re-raise not found errors as-is
+            raise
+        except APIError as e:
+            logger.error(f"API error updating global {slug}: {str(e)}")
+            # Check if it's a validation error from the API
+            if e.status_code == 400:
+                raise ValidationError(f"Validation error: {e.message}, {e.response_data}")
+            raise
+        except ConnectionError:
+            # Re-raise connection errors as-is
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error updating global {slug}: {str(e)}")
+            raise APIError(f"Unexpected error: {str(e)}")
+    

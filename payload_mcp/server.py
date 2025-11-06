@@ -173,6 +173,70 @@ async def handle_list_tools() -> List[types.Tool]:
                 },
                 "required": ["collection_name", "object_id", "data"]
             }
+        ),
+        types.Tool(
+            name="get_global",
+            description="Get a global document by its slug",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "The slug of the global to retrieve"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, **only the ONE default locale will be used**"
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "description": "Controls the depth of population for relationships"
+                    },
+                    "fallback_locale": {
+                        "type": "string",
+                        "description": "Specifies a fallback locale if the requested locale is not available"
+                    },
+                    "select": {
+                        "type": "object",
+                        "description": "Fields to include in the result"
+                    },
+                    "populate": {
+                        "type": "object",
+                        "description": "Fields to populate from related documents"
+                    }
+                },
+                "required": ["slug"]
+            }
+        ),
+        types.Tool(
+            name="update_global",
+            description="Update a global document by its slug",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "The slug of the global to update"
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "Updated global data"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "description": "Locale code for the operation (e.g., 'en', 'es'). If not provided and localization is enabled, **only the ONE default locale will be used**"
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "description": "Controls the depth of population for relationships in response"
+                    },
+                    "fallback_locale": {
+                        "type": "string",
+                        "description": "Specifies a fallback locale if the requested locale is not available"
+                    }
+                },
+                "required": ["slug", "data"]
+            }
         )
     ]
 
@@ -254,6 +318,54 @@ async def handle_call_tool(
                 raise ValueError("data is required")
             
             result = await payload_client.update_object(collection_name, object_id, data, locale)
+            return [types.TextContent(
+                type="text",
+                text=json.dumps(result, indent=2)
+            )]
+        
+        elif name == "get_global":
+            slug = arguments.get("slug")
+            locale = arguments.get("locale")
+            depth = arguments.get("depth")
+            fallback_locale = arguments.get("fallback_locale")
+            select = arguments.get("select")
+            populate = arguments.get("populate")
+            
+            if not slug:
+                raise ValueError("slug is required")
+            
+            result = await payload_client.get_global(
+                slug=slug,
+                locale=locale,
+                depth=depth,
+                fallback_locale=fallback_locale,
+                select=select,
+                populate=populate
+            )
+            return [types.TextContent(
+                type="text",
+                text=json.dumps(result, indent=2)
+            )]
+        
+        elif name == "update_global":
+            slug = arguments.get("slug")
+            data = arguments.get("data")
+            locale = arguments.get("locale")
+            depth = arguments.get("depth")
+            fallback_locale = arguments.get("fallback_locale")
+            
+            if not slug:
+                raise ValueError("slug is required")
+            if not data:
+                raise ValueError("data is required")
+            
+            result = await payload_client.update_global(
+                slug=slug,
+                data=data,
+                locale=locale,
+                depth=depth,
+                fallback_locale=fallback_locale
+            )
             return [types.TextContent(
                 type="text",
                 text=json.dumps(result, indent=2)
