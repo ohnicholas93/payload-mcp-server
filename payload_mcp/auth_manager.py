@@ -29,6 +29,7 @@ class AuthManager:
         self.auth_callbacks: list[Callable[[str], None]] = []
         self.browser_auth_in_progress = False
         self.browser_auth_event = asyncio.Event()
+        self._auth_server = None
         # Event loop where wait_for_browser_auth is awaiting; used for thread-safe signaling
         self._event_loop: Optional[asyncio.AbstractEventLoop] = None
         
@@ -74,6 +75,19 @@ class AuthManager:
                 _set_event()
             except Exception:
                 pass
+
+    def _cleanup_auth_server(self):
+        """Stop and release any active local auth server."""
+        auth_server = self._auth_server
+        self._auth_server = None
+
+        if auth_server is None:
+            return
+
+        try:
+            auth_server.stop()
+        except Exception as e:
+            logger.warning(f"Failed to stop authentication server cleanly: {e}")
     
     def set_credentials(self, email: str, password: str):
         """Store user credentials for automatic renewal."""
@@ -263,6 +277,7 @@ class AuthManager:
         try:
             self.browser_auth_in_progress = True
             self.browser_auth_event.clear()
+            self._cleanup_auth_server()
             
             # Import here to avoid circular imports
             from .auth_server import AuthServer
@@ -282,13 +297,15 @@ class AuthManager:
                 logger.error("Failed to start authentication server")
                 self.browser_auth_in_progress = False
                 return False
+
+            self._auth_server = auth_server
             
             # Open browser
             if not auth_server.open_browser():
-                logger.error("Failed to open browser for authentication")
-                auth_server.stop()
-                self.browser_auth_in_progress = False
-                return False
+                logger.warning(
+                    "Automatic browser launch failed. Open this URL manually to continue authentication: %s",
+                    auth_server.get_url(),
+                )
             
             logger.info("Browser authentication started")
             return True
@@ -296,6 +313,7 @@ class AuthManager:
         except Exception as e:
             logger.error(f"Failed to start browser authentication: {e}")
             self.browser_auth_in_progress = False
+            self._cleanup_auth_server()
             return False
     
     async def wait_for_browser_auth(self, timeout: int = 300) -> bool:
@@ -318,10 +336,12 @@ class AuthManager:
         # If the event is already set (e.g., user previously failed then retried successfully),
         # return True immediately to avoid missing the signal due to race conditions.
         if self.browser_auth_event.is_set():
+            self._cleanup_auth_server()
             return True
 
         # If there is no active browser auth flow and no event set, nothing to wait for.
         if not self.browser_auth_in_progress:
+            self._cleanup_auth_server()
             return False
         
         try:
@@ -335,3 +355,5 @@ class AuthManager:
             logger.error(f"Error waiting for browser authentication: {e}")
             self.browser_auth_in_progress = False
             return False
+        finally:
+            self._cleanup_auth_server()

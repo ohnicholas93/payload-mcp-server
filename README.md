@@ -4,7 +4,7 @@
 
 This is a Model Context Protocol (MCP) server that enables AI assistants and tools to interact directly with your Payload CMS instance. It provides a set of secure, authenticated tools for common operations like creating, searching, and updating objects in your Payload collections via the REST API.
 
-The server handles authentication automatically, including JWT token management and browser-based login flows if needed. It's designed to be lightweight, configurable, and easy to integrate into development workflows (e.g., with VS Code and Kilocode).
+The server handles authentication automatically, including JWT token management and browser-based login flows if needed. It's designed to be lightweight, configurable, and easy to integrate into development workflows (e.g., with VS Code and Kilocode), with support for both Linux and Windows environments.
 
 ## Features
 
@@ -252,6 +252,7 @@ Before setting up and using this MCP server, ensure the following:
    pip install .
    ```
    This makes the `payload-mcp-server` command available in your PATH.
+   The server and browser-auth launch flow are intended to work on both Linux and Windows.
 
 3. **Set Up Environment**:
    Copy the example environment file and customize it:

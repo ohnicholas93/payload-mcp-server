@@ -5,6 +5,10 @@ Simple HTTP server for browser-based authentication.
 import asyncio
 import json
 import logging
+import os
+import shutil
+import subprocess
+import sys
 import webbrowser
 from typing import Optional, Callable, Any
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -302,17 +306,68 @@ class AuthServer:
             self.server.shutdown()
             self.server.server_close()
             logger.info("Auth server stopped")
+
+    def get_url(self) -> str:
+        """Return the local authentication URL."""
+        return f"http://localhost:{self.port}"
     
     def open_browser(self) -> bool:
         """Open browser to the authentication page."""
-        try:
-            url = f"http://localhost:{self.port}"
-            webbrowser.open(url)
+        url = self.get_url()
+
+        if self._open_with_webbrowser(url):
             logger.info(f"Opened browser at {url}")
             return True
+
+        if self._open_with_platform_fallback(url):
+            logger.info(f"Opened browser at {url} using platform fallback")
+            return True
+
+        logger.error(
+            "Failed to open browser automatically. Open this URL manually: %s",
+            url,
+        )
+        return False
+
+    def _open_with_webbrowser(self, url: str) -> bool:
+        """Use Python's webbrowser module when it reports a successful launch."""
+        try:
+            return bool(webbrowser.open(url))
         except Exception as e:
-            logger.error(f"Failed to open browser: {e}")
+            logger.warning(f"webbrowser.open failed: {e}")
             return False
+
+    def _open_with_platform_fallback(self, url: str) -> bool:
+        """Use explicit OS launchers when webbrowser cannot resolve a handler."""
+        commands = []
+
+        if sys.platform.startswith("linux"):
+            if shutil.which("xdg-open"):
+                commands.append(["xdg-open", url])
+            if os.environ.get("KDE_FULL_SESSION") and shutil.which("kde-open"):
+                commands.append(["kde-open", url])
+            if shutil.which("gio"):
+                commands.append(["gio", "open", url])
+        elif sys.platform == "darwin":
+            if shutil.which("open"):
+                commands.append(["open", url])
+        elif os.name == "nt":
+            commands.append(["cmd", "/c", "start", "", url])
+
+        for command in commands:
+            try:
+                completed = subprocess.run(
+                    command,
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                if completed.returncode == 0:
+                    return True
+            except Exception as e:
+                logger.warning("Browser launch command failed (%s): %s", command[0], e)
+
+        return False
     
     def is_running(self) -> bool:
         """Check if the server is running."""
