@@ -282,7 +282,15 @@ From `.env.example`:
 PAYLOAD_MCP_PAYLOAD__BASE_URL=https://myapp.com/api
 PAYLOAD_MCP_PAYLOAD__AUTH_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 PAYLOAD_MCP_PAYLOAD__VERIFY_SSL=true
-PAYLOAD_MCP_LOG_LEVEL=DEBUG
+   PAYLOAD_MCP_LOG_LEVEL=DEBUG
+   ```
+
+## Testing
+
+This project can be tested with Python's built-in `unittest` runner.
+
+```bash
+./.venv/bin/python -m unittest discover -s tests -v
 ```
 
 Reload the server after config changes.
