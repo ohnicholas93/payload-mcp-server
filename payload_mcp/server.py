@@ -200,7 +200,8 @@ def get_resource_templates() -> List[types.ResourceTemplate]:
             title="Payload Collection Query",
             description=(
                 "Read a collection listing. Optional query params: limit, page, sort, depth, locale, "
-                "fallback-locale, trash, where, select, populate, joins. Object-like params must be JSON."
+                "fallback-locale, trash, where, select, populate, joins. Object-like params must be JSON "
+                "objects encoded as URL-safe query values."
             ),
             mimeType="application/json",
         ),
@@ -210,7 +211,8 @@ def get_resource_templates() -> List[types.ResourceTemplate]:
             title="Payload Document",
             description=(
                 "Read a single collection document by ID. Optional query params: depth, locale, "
-                "fallback-locale, draft, select, populate, joins. Object-like params must be JSON."
+                "fallback-locale, draft, select, populate, joins. Object-like params must be JSON objects "
+                "encoded as URL-safe query values."
             ),
             mimeType="application/json",
         ),
@@ -220,7 +222,8 @@ def get_resource_templates() -> List[types.ResourceTemplate]:
             title="Payload Global",
             description=(
                 "Read a global document by slug. Optional query params: depth, locale, "
-                "fallback-locale, select, populate. Object-like params must be JSON."
+                "fallback-locale, select, populate. Object-like params must be JSON objects encoded as "
+                "URL-safe query values."
             ),
             mimeType="application/json",
         ),
@@ -236,7 +239,8 @@ def build_resource_guide() -> Dict[str, Any]:
                 "uriTemplate": COLLECTION_TEMPLATE_URI,
                 "example": "payload://collections/posts?limit=5&sort=-updatedAt",
                 "notes": [
-                    "Use JSON-encoded query params for where, select, populate, and joins.",
+                    "Use URL-encoded JSON object values for where, select, populate, and joins.",
+                    "Example: where=%7B%22status%22%3A%7B%22equals%22%3A%22published%22%7D%7D",
                     "Collection reads return the same payload as the search_objects tool.",
                 ],
             },

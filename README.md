@@ -34,12 +34,13 @@ This server now exposes MCP resources in addition to tools.
 - `payload://collections/{collection}/{id}`: Read a single collection document by ID. Supports `depth`, `locale`, `fallback-locale`, `draft`, `select`, `populate`, and `joins`.
 - `payload://globals/{slug}`: Read a global document by slug. Supports `depth`, `locale`, `fallback-locale`, `select`, and `populate`.
 
-For `where`, `select`, `populate`, and `joins`, pass JSON-encoded objects in the query string.
+For `where`, `select`, `populate`, and `joins`, pass a JSON object as the value and URL-encode that JSON in the query string.
 
 Example URIs:
 
 ```text
 payload://collections/posts?limit=5&sort=-updatedAt
+payload://collections/posts?where=%7B%22status%22%3A%7B%22equals%22%3A%22published%22%7D%7D
 payload://collections/posts/123?depth=1
 payload://globals/header?depth=1
 ```
@@ -275,15 +276,15 @@ From `.env.example`:
   - `PAYLOAD_MCP_PAYLOAD__BYPASS_PROXY`: Bypass proxies for localhost (default: true).
 
 - **Server Settings**:
-  - `PAYLOAD_MCP_LOG_LEVEL`: Logging verbosity (default: `INFO`; options: `DEBUG`, `WARNING`, `ERROR`, `CRITICAL`).
+  - `PAYLOAD_MCP_LOG_LEVEL`: Logging verbosity (default: `INFO`; options: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`).
 
 **Example `.env` for Remote Payload**:
-```
+``` 
 PAYLOAD_MCP_PAYLOAD__BASE_URL=https://myapp.com/api
 PAYLOAD_MCP_PAYLOAD__AUTH_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 PAYLOAD_MCP_PAYLOAD__VERIFY_SSL=true
-   PAYLOAD_MCP_LOG_LEVEL=DEBUG
-   ```
+PAYLOAD_MCP_LOG_LEVEL=DEBUG
+```
 
 ## Testing
 

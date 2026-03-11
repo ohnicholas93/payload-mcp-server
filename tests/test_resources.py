@@ -68,6 +68,19 @@ class ResourceSupportTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(5, payload["kwargs"]["limit"])
         self.assertEqual({"status": {"equals": "published"}}, payload["kwargs"]["where"])
 
+    async def test_collection_resource_accepts_url_encoded_json_query_params(self):
+        with patch.object(
+            server_module,
+            "get_payload_client",
+            return_value=FakePayloadClient(),
+        ):
+            contents = await server_module.handle_read_resource(
+                "payload://collections/posts?where=%7B%22status%22%3A%7B%22equals%22%3A%22published%22%7D%7D"
+            )
+
+        payload = json.loads(contents[0].content)
+        self.assertEqual({"status": {"equals": "published"}}, payload["kwargs"]["where"])
+
     async def test_document_resource_routes_through_get_object(self):
         with patch.object(
             server_module,
