@@ -4,8 +4,7 @@ Payload CMS API client for MCP server.
 
 import json
 import logging
-from typing import Dict, List, Optional, Any, Union
-from urllib.parse import urljoin
+from typing import Dict, Optional, Any, Union
 
 import httpx
 
@@ -536,6 +535,98 @@ class PayloadClient:
             raise
         except Exception as e:
             logger.error(f"Unexpected error updating object {object_id} in collection {collection_name}: {str(e)}")
+            raise APIError(f"Unexpected error: {str(e)}")
+
+    async def get_object(
+        self,
+        collection_name: str,
+        object_id: Union[str, int],
+        depth: Optional[int] = None,
+        locale: Optional[str] = None,
+        fallback_locale: Optional[str] = None,
+        select: Optional[Dict[str, Any]] = None,
+        populate: Optional[Dict[str, Any]] = None,
+        joins: Optional[Dict[str, Any]] = None,
+        draft: Optional[bool] = None
+    ) -> Dict[str, Any]:
+        """
+        Get a single object from a collection by ID.
+
+        Args:
+            collection_name: Name of the collection
+            object_id: ID of the object to retrieve
+            depth: Controls the depth of population for relationships
+            locale: Specifies the locale for retrieving the document
+            fallback_locale: Specifies a fallback locale
+            select: Fields to include in the result
+            populate: Fields to populate from related documents
+            joins: Custom requests for join fields
+            draft: Whether to retrieve draft content when supported
+
+        Returns:
+            Object data
+
+        Raises:
+            ValidationError: If the collection name or ID is invalid
+            AuthenticationError: If authentication fails
+            NotFoundError: If the object is not found
+            APIError: If the API request fails
+            ConnectionError: If connection to Payload CMS fails
+        """
+        if not collection_name:
+            raise ValidationError("Collection name is required")
+
+        if object_id in (None, ""):
+            raise ValidationError("Object ID is required")
+
+        if depth is not None and depth < 0:
+            raise ValidationError("Depth must be a non-negative integer")
+
+        try:
+            params = {}
+
+            if depth is not None:
+                params["depth"] = depth
+            if locale is not None:
+                params["locale"] = locale
+            if fallback_locale is not None:
+                params["fallback-locale"] = fallback_locale
+            if draft is not None:
+                params["draft"] = "true" if draft else "false"
+
+            if select:
+                self._build_nested_params(select, "select", params)
+
+            if populate:
+                self._build_nested_params(populate, "populate", params)
+
+            if joins:
+                self._build_nested_params(joins, "joins", params)
+
+            response = await self._make_request(
+                "GET",
+                f"{collection_name}/{object_id}",
+                params=params if params else None
+            )
+
+            logger.debug(f"Successfully retrieved object {object_id} from collection {collection_name}")
+            return response
+
+        except ValidationError:
+            raise
+        except AuthenticationError:
+            raise
+        except NotFoundError:
+            raise
+        except APIError as e:
+            logger.error(f"API error retrieving object {object_id} from collection {collection_name}: {str(e)}")
+            if e.status_code == 400:
+                raise ValidationError(f"Invalid parameters: {e.message}, {e.response_data}")
+            raise
+        except ConnectionError:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error retrieving object {object_id} from collection {collection_name}: {str(e)}")
             raise APIError(f"Unexpected error: {str(e)}")
     
     async def get_global(

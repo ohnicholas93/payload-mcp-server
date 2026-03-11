@@ -12,10 +12,37 @@ The server handles authentication automatically, including JWT token management 
 - **Search Objects**: Query collections with filters (MongoDB-like `where` clauses), pagination, sorting, localization, and population of related fields.
 - **Update Objects**: Modify existing documents by ID, with support for partial updates.
 - **Globals Support**: Read and update Global documents by their slug, with full localization and population support.
+- **MCP Resources Support**: Exposes concrete `payload://server/*` resources plus templates for collections, documents, and globals through `resources/list`, `resources/read`, and `resources/templates/list`.
 - **Authentication Handling**: Automatic JWT token refresh, stored credentials, and interactive browser login for seamless auth.
 - **Localization Support**: Works with Payload's i18n features; specify locales in tool calls.
 - **Error Handling**: Comprehensive exceptions for validation, auth, API, and connection issues.
 - **Configurable**: Override Payload host, timeouts, SSL, and logging via environment variables.
+
+## MCP Resources
+
+This server now exposes MCP resources in addition to tools.
+
+### Concrete Resources
+
+- `payload://server/info`: Server and Payload connection metadata.
+- `payload://server/auth`: Authentication state summary.
+- `payload://server/resources`: Usage guide for the resource URI formats.
+
+### Resource Templates
+
+- `payload://collections/{collection}`: Read a collection listing. Supports query params such as `limit`, `page`, `sort`, `depth`, `locale`, `fallback-locale`, `trash`, `where`, `select`, `populate`, and `joins`.
+- `payload://collections/{collection}/{id}`: Read a single collection document by ID. Supports `depth`, `locale`, `fallback-locale`, `draft`, `select`, `populate`, and `joins`.
+- `payload://globals/{slug}`: Read a global document by slug. Supports `depth`, `locale`, `fallback-locale`, `select`, and `populate`.
+
+For `where`, `select`, `populate`, and `joins`, pass JSON-encoded objects in the query string.
+
+Example URIs:
+
+```text
+payload://collections/posts?limit=5&sort=-updatedAt
+payload://collections/posts/123?depth=1
+payload://globals/header?depth=1
+```
 
 ## Tool Schemas
 
